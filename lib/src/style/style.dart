@@ -110,10 +110,23 @@ class StyleReader {
       if (type == null) continue;
       dynamic source;
       var entryUrl = entry.value['url'] as String?;
-      if (entryUrl != null) {
+      if (entry.value['tiles'] != null) {
+        source = entry.value;
+      } else if (entryUrl != null && entryUrl.contains('VectorTileServer')) {
+        final apiKeyParam = apiKey != null
+            ? (entryUrl.contains('?') ? '&apiKey=$apiKey' : '?apiKey=$apiKey')
+            : '';
+        source = {
+          'tiles': [
+            '$entryUrl/tile/{z}/{y}/{x}.pbf$apiKeyParam'
+          ],
+          'maxzoom': entry.value['maxzoom'] ?? 14,
+          'minzoom': entry.value['minzoom'] ?? 1,
+          'type': 'vector'
+        };
+      } else if (entryUrl != null) {
         final sourceUrl = StyleUriMapper(key: apiKey).mapSource(uri, entryUrl);
-        source =
-            await compute(jsonDecode, await _httpGet(sourceUrl, httpHeaders));
+        source = await compute(jsonDecode, await _httpGet(sourceUrl, httpHeaders));
         if (source is! Map) {
           throw _invalidStyle(sourceUrl);
         }
